@@ -1,8 +1,11 @@
-// Signatures
+////////// SIGNATURES //////////
 
 sig Email {}
+
 sig Password {}
+
 sig Firstname {}
+
 sig Lastname {}
 
 abstract sig User {
@@ -12,81 +15,127 @@ abstract sig User {
 	lastname: one Lastname
 }
 
-sig PolicyMaker extends User {}
+sig PolicyMaker extends User {
+	labels: some Farmer
+}
 
 sig Farmer extends User {
-	farm: one Farm,
-	performance: one Int
+	performance: one Int,
+	owes: one Farm,
+	faces: set Problem,
+	creates: set DiscussionForum,
+	gives: set Suggestion,
+	views: set Map
+}{
+	performance >= 0
+	performance =< 5
 }
-{ performance >=0 and performance <= 1 }
+/* we defined the performance range from 0 to 5, for simplicity!
+because alloy Int range is from -8 to 7
+*/
 
 sig Farm {
-	location: one Location,
-	products:some Product
+	locatedOn: one Location,
+	products: some Product
 }
 
 sig Location {
 	latitude: one Int,
 	longitude: one Int
+}{
+	latitude >= -5 and latitude =< 5
+	longitude >= -5 and longitude =< 5
 }
-{ latitude >= -90 and latitude <= 90 and longitude >= -180 and longitude <= 180 }
+/* we defined the latitude and longitude range from -5 to 5, for simplicity!
+because alloy Int range is from -8 to 7
+in fact, latitude range is from -90 to 90 and longitude range is from -180 to 180
+*/
 
 sig Product {
 	type: one Type,
 	producedAmount: one Int
-}
-
-sig Type {}
-
-sig Problem {
-	description: one String
+}{
+	producedAmount > 0
 }
 
 sig DiscussionForum {
 	title: one String,
-	messages: some Message
+	messages: set Message
 }
+
+sig Type {}
+
+sig Problem {}
 
 sig Message {}
 
-sig Suggestion {
-	description: one String
-}
+sig Suggestion {}
 
-// Facts
+sig Map {}
 
-// every email must be associated to just one user
+////////// FACTS //////////
+
+// each email must be associated to just one user
 fact EmailAssociationUser {
 	all e: Email | one u: User | e in u.email
 }
 
-// every password must be associated to at least one user
+// each password must be associated to at least one user
 fact PasswordAssociationUser {
 	all p: Password | some u: User | p in u.password
 }
 
-// every firstname must be associated to at least one user
+// each firstname must be associated to at least one user
 fact FirstnameAssociationUser {
 	all fn: Firstname | some u: User | fn in u.firstname
 }
 
-// every lastname must be associated to at least one user
+// each lastname must be associated to at least one user
 fact LastnameAssociationUser {
 	all ln: Lastname | some u: User | ln in u.lastname
 }
 
-// every type of product must be associated to at least one user
+// each farm must have only one farmer as owener
+fact FarmOwenershipFarmer {
+	all farm: Farm | one farmer: Farmer | farm in farmer.owes
+}
+
+// each location must be associated to only one farm
+fact LocationAssociationFarm {
+	all l: Location | one f: Farm | l in f.locatedOn
+}
+
+// each product must has grown in at least a farm
+fact ProductAssociationFarm {
+	all p: Product | some f: Farm | p in f.products
+}
+
+// each type of product must be associated to at least one product
 fact TypeAssociationProduct {
 	all t: Type | some p: Product | t in p.type
 }
 
-// every message must be associated to at least one discussion forum
+// each problem must be created by at least one farmer
+fact CreateProblemByFarmer {
+	all p: Problem | some f: Farmer | p in f.faces
+}
+
+// each suggestion must be given by at least one farmer
+fact GiveSuggestionByFarmer {
+	all s: Suggestion | some f: Farmer | s in f.gives
+}
+
+// each message must be associated to at least one discussion forum
 fact MessageAssociationDiscussionForum {
 	all m: Message | some df: DiscussionForum | m in df.messages
 }
 
-
 pred show {
-	#User >= 2
+	#Farmer >= 2
+	#PolicyMaker > 0
+	#Problem > 0
+	#Suggestion >0
 }
+
+run show
 
