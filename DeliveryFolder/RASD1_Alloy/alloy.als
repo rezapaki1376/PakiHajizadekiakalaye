@@ -110,6 +110,12 @@ fact LocationAssociationFarm {
 	all l: Location | one f: Farm | l in f.locatedOn
 }
 
+// each location must refer to a different place
+fact {
+	all disj l1, l2: Location |
+	l1.latitude = l2.latitude => l1.longitude != l2.longitude
+}
+
 // each product always must be associated with at least a farm
 fact ProductAssociationFarm {
 	all p: Product | some f: Farm | p in f.products
@@ -118,6 +124,12 @@ fact ProductAssociationFarm {
 // each type of product always must be associated with at least one product
 fact TypeAssociationProduct {
 	all t: Type | some p: Product | t in p.type
+}
+
+// A farm shouln't have two product with same type
+fact DifferentProductType {
+	all f: Farm | all disj p1, p2: Product |
+	p1 in f.products and p2 in f.products => p1.type != p2.type
 }
 
 // each problem always must be associated with at least one farmer
@@ -154,21 +166,19 @@ fact TitleAssociationDiscussionForum {
 
 // a farmer shouldn't create two discussion forum with same title
 fact DifferentDiscussionForumTitle {
-	all f: Farmer | disj df1, df2: DiscussionForum |
+	all f: Farmer | all disj df1, df2: DiscussionForum |
 	f = df1.creator and f = df2.creator => df1.title != df2.title
 }
 
-// A farm shouln't have two product with same type
-// both latitude and longitude shouldn't be same for two difrent locations
-
 
 pred show {
-	#Farmer > 2
+	#Farmer > 1
 	#PolicyMaker > 0
-	#Problem > 2
-	#Suggestion > 2
-	#DiscussionForum > 0
+	#Problem > 1
+	#Suggestion > 1
+	#DiscussionForum > 1
 	#Map = 2
+	#Product > 3
 }
 
 run show for 10
