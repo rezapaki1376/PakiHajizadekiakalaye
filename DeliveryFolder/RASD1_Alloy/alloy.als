@@ -23,8 +23,6 @@ sig Farmer extends User {
 	performance: one Int,
 	owes: one Farm,
 	faces: set Problem,
-	creates: set DiscussionForum,
-	gives: set Suggestion,
 	views: set Map
 }{
 	performance >= 0
@@ -59,8 +57,15 @@ sig Product {
 }
 
 sig DiscussionForum {
-	title: one String,
-	messages: set Message
+	creator: one Farmer,
+	title: one Title,
+	messages: some Message
+}
+
+sig Suggestion {
+	sender: one Farmer,
+	receiver: one Farmer,
+	solves: one Problem
 }
 
 sig Type {}
@@ -69,73 +74,102 @@ sig Problem {}
 
 sig Message {}
 
-sig Suggestion {}
+sig Title {}
 
 sig Map {}
 
 ////////// FACTS //////////
 
-// each email must be associated to just one user
+// each email always must be associated with only one user
 fact EmailAssociationUser {
 	all e: Email | one u: User | e in u.email
 }
 
-// each password must be associated to at least one user
+// each password always must be associated with at least one user
 fact PasswordAssociationUser {
 	all p: Password | some u: User | p in u.password
 }
 
-// each firstname must be associated to at least one user
+// each firstname always must be associated with at least one user
 fact FirstnameAssociationUser {
 	all fn: Firstname | some u: User | fn in u.firstname
 }
 
-// each lastname must be associated to at least one user
+// each lastname always must be associated with at least one user
 fact LastnameAssociationUser {
 	all ln: Lastname | some u: User | ln in u.lastname
 }
 
-// each farm must have only one farmer as owener
+// each farm always must have only one farmer as owener
 fact FarmOwenershipFarmer {
 	all farm: Farm | one farmer: Farmer | farm in farmer.owes
 }
 
-// each location must be associated to only one farm
+// each location always must be associated with only one farm
 fact LocationAssociationFarm {
 	all l: Location | one f: Farm | l in f.locatedOn
 }
 
-// each product must has grown in at least a farm
+// each product always must be associated with at least a farm
 fact ProductAssociationFarm {
 	all p: Product | some f: Farm | p in f.products
 }
 
-// each type of product must be associated to at least one product
+// each type of product always must be associated with at least one product
 fact TypeAssociationProduct {
 	all t: Type | some p: Product | t in p.type
 }
 
-// each problem must be created by at least one farmer
-fact CreateProblemByFarmer {
+// each problem always must be associated with at least one farmer
+fact ProblemAssociationFarmer {
 	all p: Problem | some f: Farmer | p in f.faces
 }
 
-// each suggestion must be given by at least one farmer
-fact GiveSuggestionByFarmer {
-	all s: Suggestion | some f: Farmer | s in f.gives
+// sender and receiver of a suggestion must be different
+fact DistinctSenderReceiver {
+	all s: Suggestion | s.sender != s.receiver
 }
 
-// each message must be associated to at least one discussion forum
+// sender of a suggestion shouldn't be someone who faces the same problem
+fact SuggestionSenderLimitation {
+	all f: Farmer, s: Suggestion |
+	s.solves in f.faces => f != s.sender
+}
+
+// receiver of a suggestion must be someone who faces the problem
+fact SuggestionReceiverLimitation {
+	all f: Farmer, s: Suggestion |
+	f = s.receiver => s.solves in f.faces
+}
+
+// each message always must be associated with at least one discussion forum
 fact MessageAssociationDiscussionForum {
 	all m: Message | some df: DiscussionForum | m in df.messages
 }
 
-pred show {
-	#Farmer >= 2
-	#PolicyMaker > 0
-	#Problem > 0
-	#Suggestion >0
+// each title always must be associated with at least one discussion forum
+fact TitleAssociationDiscussionForum {
+	all t: Title | some df: DiscussionForum | t in df.title
 }
 
-run show
+// a farmer shouldn't create two discussion forum with same title
+fact DifferentDiscussionForumTitle {
+	all f: Farmer | disj df1, df2: DiscussionForum |
+	f = df1.creator and f = df2.creator => df1.title != df2.title
+}
+
+// A farm shouln't have two product with same type
+// both latitude and longitude shouldn't be same for two difrent locations
+
+
+pred show {
+	#Farmer > 2
+	#PolicyMaker > 0
+	#Problem > 2
+	#Suggestion > 2
+	#DiscussionForum > 0
+	#Map = 2
+}
+
+run show for 10
 
